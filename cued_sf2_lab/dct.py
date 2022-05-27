@@ -1,7 +1,8 @@
 import numpy as np
 import operator
+from cued_sf2_lab.laplacian_pyramid import bpp
 
-__all__ = ["dct_ii", "dct_iv", "colxfm", "regroup"]
+__all__ = ["dct_ii", "dct_iv", "colxfm", "regroup", "dct", "idct", "dctbpp"]
 
 def dct_ii(N: int) -> np.ndarray:
     """
@@ -101,3 +102,56 @@ def regroup(X, N):
     X = X.reshape(m // N_m, N_m, n // N_n, N_n)  # subdivide the axes
     X = X.transpose((1, 0, 3, 2))                # permute them
     return X.reshape(m, n)                       # and recombine
+
+
+def dct(X, N):
+    """
+    Performs the NxN DCT.
+
+    Parameters:
+    X (2D numpy array): image to be transformed
+    N (int): size of the DCT
+
+    Returns:
+    Y (2D numpy array): transformed image
+    """
+    C = dct_ii(N)
+    Y = colxfm(colxfm(X, C).T, C).T
+    return Y
+
+
+def idct(Y, N):
+    """
+    Performs the inverse NxN DCT.
+
+    Parameters:
+    Y (2D numpy array): image to be inverse transformed
+    N (int): size of the DCT
+
+    Returns:
+    Z (2D numpy array): transformed image
+    """
+    C = dct_ii(N)
+    Z = colxfm(colxfm(Y.T, C.T).T, C.T)
+    return Z
+
+
+def dctbpp(Yr, N):
+    """
+    Computes the number of bits required to compress the regrouped DCT image Yr.
+
+    Parameters:
+    Yr (2D numpy array): REGROUPED transformed image
+    N (int): size of the DCT
+
+    Returns:
+    nbits (float): number of bits to compress image
+    """
+    nbits = 0
+    L = int(Yr.shape[0]/N)
+    npixels = L**2
+    for i in range(N):
+        for j in range(N):
+            subimage = Yr[i*L:(i+1)*L, j*L:(j+1)*L]
+            nbits += bpp(subimage)*npixels
+    return nbits

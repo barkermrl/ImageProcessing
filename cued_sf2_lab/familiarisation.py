@@ -4,9 +4,9 @@
 import scipy.io
 import matplotlib.ticker
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import numpy as np
 from matplotlib import colors
+from scipy.optimize import minimize_scalar
 
 
 def load_mat_img(img, img_info, cmap_info={}):
@@ -23,14 +23,15 @@ def load_mat_img(img, img_info, cmap_info={}):
     cmaps_dict (dict): Dictionary of numpy.ndarray's of colormaps
     """
     # check that a .mat filename is provided
-    if not img.endswith('.mat'):
-        raise ValueError('Please provide a .mat image name.')
+    if not img.endswith(".mat"):
+        raise ValueError("Please provide a .mat image name.")
     img_contents = scipy.io.loadmat(img)
     X = img_contents[img_info]
     cmaps_dict = {}
     for cmap_array in cmap_info:
         cmaps_dict[cmap_array] = prep_cmap_array_plt(
-            img_contents[cmap_array], cmap_array)
+            img_contents[cmap_array], cmap_array
+        )
 
     return X, cmaps_dict
 
@@ -51,8 +52,7 @@ def prep_cmap_array_plt(cmap_array, cmap_name, N=256):
     # appends 1's for the alpha channel making the array Nx4
     cmap_array = np.c_[cmap_array, np.ones(len(cmap_array))]
     # TODO: Find out what the gamma parameter below is
-    cmap_plt = colors.LinearSegmentedColormap.from_list(cmap_name,
-                                                        cmap_array, N)
+    cmap_plt = colors.LinearSegmentedColormap.from_list(cmap_name, cmap_array, N)
     return cmap_plt
 
 
@@ -85,23 +85,23 @@ def multiples_pow2_between(vmin, vmax, n: int) -> np.ndarray:
 
     def possible_sizes():
         step = dexp
-        min_i = np.ceil(vmin / (2.0 ** step))
-        max_i = np.floor(vmax / (2.0 ** step))
+        min_i = np.ceil(vmin / (2.0**step))
+        max_i = np.floor(vmax / (2.0**step))
         while min_i > max_i:
             step -= 1
-            min_i = np.ceil(vmin / (2.0 ** step))
-            max_i = np.floor(vmax / (2.0 ** step))
+            min_i = np.ceil(vmin / (2.0**step))
+            max_i = np.floor(vmax / (2.0**step))
         yield (min_i, max_i, step)
         while max_i - min_i + 1 <= n:
             yield (min_i, max_i, step)
             step -= 1
-            min_i = np.ceil(vmin / (2.0 ** step))
-            max_i = np.floor(vmax / (2.0 ** step))
+            min_i = np.ceil(vmin / (2.0**step))
+            max_i = np.floor(vmax / (2.0**step))
 
     # find the largest possible size, and use it
     for min_i, max_i, step in possible_sizes():
         pass
-    return np.arange(min_i, max_i + 1)*(2.0**step)
+    return np.arange(min_i, max_i + 1) * (2.0**step)
 
 
 def plot_image(X, *, ax=None, **kwargs):
@@ -110,8 +110,8 @@ def plot_image(X, *, ax=None, **kwargs):
     and chooses suitable axis ticks for this lab.
     """
     m, n = X.shape
-    kwargs.setdefault('extent', (0, n, m, 0))
-    kwargs.setdefault('cmap', 'gray')
+    kwargs.setdefault("extent", (0, n, m, 0))
+    kwargs.setdefault("cmap", "gray")
     if ax is None:
         ax = plt.gca()
     ret = ax.imshow(X, **kwargs)
@@ -120,17 +120,47 @@ def plot_image(X, *, ax=None, **kwargs):
     return ret
 
 
+def rms_error(X,Y):
+    """
+    Returns the rms_error between X and Y.
+    """
+    return np.std(X-Y)
+
+
+def optimise_stepsize(fun, X, target_rms, **kwargs):
+    """
+    Optimize with respect to fun(arg) to match the target rms error.
+
+    Parameters:
+    fun(scalar) -> (2D numpy array) : Function with one argument (normally stepsize) which outputs reconstructed image array
+    X (2D numpy array) : Source image to provide reference
+    target_rms (float) : Target rms error between X and the reconstructed image
+
+    Returns:
+    res : scipy object containing the result of the optimisation.
+          Attributes: fun, nfev, nit, success, x
+    """
+
+    def objective(stepsize):
+        Z = fun(stepsize)
+        rms = np.std(X - Z)
+        return np.abs(rms - target_rms)
+    res = minimize_scalar(objective)
+    assert res.success is True
+    return res
+
+
 if __name__ == "__main__":
     # to run this python -m cued_sf2_lab.familiarisation
-    img = 'lighthouse.mat'
-    img_info = 'X'
-    cmap_info = {'map', 'map2'}
+    img = "lighthouse.mat"
+    img_info = "X"
+    cmap_info = {"map", "map2"}
     X, cmaps_dict = load_mat_img(img, img_info, cmap_info)
     # print('Loaded X of shape: ', X.shape)
     # print('Loaded color_map_1 of shape:', cmaps_dict['map'].shape)
     # print(type(X))
 
-    cmap_array = cmaps_dict['map2']
-    cmap_plt = prep_cmap_array_plt(cmap_array, 'map2')
+    cmap_array = cmaps_dict["map2"]
+    cmap_plt = prep_cmap_array_plt(cmap_array, "map2")
     # plot_image(X, cmap_plt='gray')
     plot_image(X, cmap_plt)

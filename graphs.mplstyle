@@ -1,0 +1,4 @@
+font.size: 8
+axes.titlesize: 8
+figure.figsize: 8.0, 8.0
+figure.dpi: 140

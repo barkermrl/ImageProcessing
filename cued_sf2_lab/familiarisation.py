@@ -120,11 +120,11 @@ def plot_image(X, *, ax=None, **kwargs):
     return ret
 
 
-def rms_error(X,Y):
+def rms_error(X, Y):
     """
     Returns the rms_error between X and Y.
     """
-    return np.std(X-Y)
+    return np.std(X - Y)
 
 
 def optimise_stepsize(fun, X, target_rms, **kwargs):
@@ -135,6 +135,7 @@ def optimise_stepsize(fun, X, target_rms, **kwargs):
     fun(scalar) -> (2D numpy array) : Function with one argument (normally stepsize) which outputs reconstructed image array
     X (2D numpy array) : Source image to provide reference
     target_rms (float) : Target rms error between X and the reconstructed image
+    **kwargs : Additional kwargs to pass so minimize_scalar function.
 
     Returns:
     res : scipy object containing the result of the optimisation.
@@ -145,9 +146,30 @@ def optimise_stepsize(fun, X, target_rms, **kwargs):
         Z = fun(stepsize)
         rms = np.std(X - Z)
         return np.abs(rms - target_rms)
+
     res = minimize_scalar(objective)
     assert res.success is True
     return res
+
+
+def plot_grid(images, **kwargs):
+    """
+    Plot a collection of image/title pairs on one figure.
+
+    Parameters:
+    images ([(2D numpy array, str)]) : List containing (image, title) pairs.
+    **kwargs : kwargs to pass to the plt.subplots function.
+
+    Returns:
+    Matplotlib figure
+    """
+    fig, axs = plt.subplots(**kwargs)
+    axs = axs.flatten()
+    for (image, title), ax in zip(images, axs):
+        plot_image(image, ax=ax)
+        ax.set_title(title)
+    plt.show()
+    return fig
 
 
 if __name__ == "__main__":
